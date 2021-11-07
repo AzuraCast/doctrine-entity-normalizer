@@ -1,14 +1,13 @@
 {
-    "name": "slvreagle23/library-skeleton",
-    "description": "Library description.",
+    "name": "azuracast/doctrine-entity-normalizer",
+    "description": "An implementation of the Symfony Serializer with custom support for Doctrine 2 ORM entities.",
     "type": "library",
     "license": "Apache-2.0",
     "authors": [
         {
             "name": "Buster 'Silver Eagle' Neece",
             "email": "buster@busterneece.com",
-            "homepage": "https://dashdev.net/",
-            "role": "Lead Developer of AzuraForms Fork"
+            "homepage": "https://dashdev.net/"
         }
     ],
     "scripts": {
@@ -22,11 +21,16 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\Skeleton\\": "src"
+            "Azura\\Normalizer\\": "src"
         }
     },
     "require": {
-        "php": "^8.0"
+        "php": "^8.0",
+        "doctrine/collections": ">1",
+        "doctrine/inflector": "^2",
+        "doctrine/orm": "^2",
+        "doctrine/persistence": "^2",
+        "symfony/serializer": "^5"
     },
     "require-dev": {
         "php-parallel-lint/php-console-highlighter": "^0.5.0",
