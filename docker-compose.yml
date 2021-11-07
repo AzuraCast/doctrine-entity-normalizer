@@ -1,0 +1,12 @@
+services:
+  cli:
+    image: slvreagle23/testing:latest
+    build:
+      context: .
+    volumes:
+      - ./:/app
+      - composer_data:/tmp
+    command: composer test
+
+volumes:
+  composer_data: {}

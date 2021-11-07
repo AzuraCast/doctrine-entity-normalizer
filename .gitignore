@@ -1,0 +1,18 @@
+/ci.env
+
+/vendor/
+/coverage/
+/phpunit.xml
+/composer.lock
+
+# Junk/cache files.
+*Thumbs.db
+tmp/cache/*---*
+*.DS_Store
+*.apdisk
+.vagrant
+.idea
+/ubuntu-*-console.log
+.phplint-cache
+/.php_cs.cache
+/.phpunit.result.cache
