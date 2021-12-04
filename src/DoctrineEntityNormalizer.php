@@ -45,7 +45,7 @@ class DoctrineEntityNormalizer extends AbstractNormalizer implements NormalizerA
     /**
      * Replicates the "toArray" functionality previously present in Doctrine 1.
      */
-    public function normalize(mixed $object, ?string $format = null, array $context = []): mixed
+    public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
         if ($this->isCircularReference($object, $context)) {
             return $this->handleCircularReference($object, $format, $context);
