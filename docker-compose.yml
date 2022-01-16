@@ -1,8 +1,6 @@
 services:
   cli:
-    image: slvreagle23/testing:latest
-    build:
-      context: .
+    image: ghcr.io/azuracast/testing:8.1.0
     volumes:
       - ./:/app
       - composer_data:/tmp
