@@ -5,10 +5,10 @@ namespace Azura\Normalizer;
 use Azura\Normalizer\Exception\NoGetterAvailableException;
 use Azura\Normalizer\Attributes\DeepNormalize;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Util\ClassUtils;
 use Doctrine\Inflector\Inflector;
 use Doctrine\Inflector\InflectorFactory;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Persistence\Proxy;
 use ReflectionClass;
 use ReflectionProperty;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
@@ -361,9 +361,7 @@ class DoctrineEntityNormalizer extends AbstractNormalizer implements NormalizerA
     protected function isEntity(mixed $class): bool
     {
         if (is_object($class)) {
-            $class = ($class instanceof Proxy)
-                ? get_parent_class($class)
-                : get_class($class);
+            $class = ClassUtils::getClass($class);
         }
 
         if (!is_string($class) || !class_exists($class)) {
