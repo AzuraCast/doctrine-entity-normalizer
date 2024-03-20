@@ -1,10 +1,8 @@
 services:
   cli:
-    image: ghcr.io/azuracast/testing:8.1.0
+    image: ghcr.io/azuracast/testing:latest
+    build:
+      context: .
     volumes:
-      - ./:/app
-      - composer_data:/tmp
+      - ./:/var/app/www
     command: composer test
-
-volumes:
-  composer_data: {}

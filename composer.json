@@ -1,13 +1,13 @@
 {
     "name": "azuracast/doctrine-entity-normalizer",
-    "description": "An implementation of the Symfony Serializer with custom support for Doctrine 2 ORM entities.",
+    "description": "An implementation of the Symfony Serializer with custom support for Doctrine 3 ORM entities.",
     "type": "library",
     "license": "Apache-2.0",
     "authors": [
         {
-            "name": "Buster 'Silver Eagle' Neece",
+            "name": "Buster Neece",
             "email": "buster@busterneece.com",
-            "homepage": "https://dashdev.net/"
+            "homepage": "https://busterneece.com/"
         }
     ],
     "scripts": {
@@ -25,12 +25,12 @@
         }
     },
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.2",
         "doctrine/collections": ">1",
         "doctrine/inflector": "^2",
-        "doctrine/orm": "^2",
+        "doctrine/orm": "^3",
         "doctrine/persistence": "^2|^3",
-        "symfony/serializer": "^5|^6"
+        "symfony/serializer": "^7"
     },
     "require-dev": {
         "php-parallel-lint/php-console-highlighter": "^1",

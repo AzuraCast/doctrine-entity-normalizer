@@ -7,7 +7,7 @@ namespace Azura\Normalizer\Attributes;
 use Attribute;
 
 #[Attribute(Attribute::TARGET_PROPERTY | Attribute::TARGET_METHOD)]
-class DeepNormalize
+final class DeepNormalize
 {
     private bool $deepNormalize;
 
