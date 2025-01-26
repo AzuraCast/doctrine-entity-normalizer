@@ -1,6 +1,6 @@
 FROM mlocati/php-extension-installer AS php-extension-installer
 
-FROM php:8.2-cli-alpine3.19 AS base
+FROM php:8.4-cli-alpine3.19 AS base
 
 ENV TZ=UTC
 
