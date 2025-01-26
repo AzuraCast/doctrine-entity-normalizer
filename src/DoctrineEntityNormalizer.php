@@ -30,7 +30,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
 
     public function __construct(
         private readonly EntityManagerInterface $em,
-        ClassMetadataFactoryInterface $classMetadataFactory = null,
+        ?ClassMetadataFactoryInterface $classMetadataFactory = null,
         array $defaultContext = []
     ) {
         $defaultContext[AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES] = true;
@@ -72,7 +72,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
      * @param array $context
      * @return T
      */
-    public function denormalize(mixed $data, string $type, string $format = null, array $context = []): object
+    public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): object
     {
         $context = $this->addDoctrineContext($type, $context);
 
@@ -119,12 +119,12 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
         return $context;
     }
 
-    public function supportsNormalization(mixed $data, string $format = null, array $context = []): bool
+    public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
         return $this->isEntity($data);
     }
 
-    public function supportsDenormalization(mixed $data, string $type, string $format = null, array $context = []): bool
+    public function supportsDenormalization(mixed $data, string $type, ?string $format = null, array $context = []): bool
     {
         return $this->isEntity($type);
     }
@@ -148,7 +148,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
         return parent::getAllowedAttributes($classOrObject, $context, $attributesAsString);
     }
 
-    protected function extractAttributes(object $object, string $format = null, array $context = []): array
+    protected function extractAttributes(object $object, ?string $format = null, array $context = []): array
     {
         $rawProps = (new ReflectionClass($object))->getProperties(
             ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED
@@ -176,7 +176,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
     protected function isAllowedAttribute(
         object|string $classOrObject,
         string $attribute,
-        string $format = null,
+        ?string $format = null,
         array $context = []
     ): bool {
         if (!parent::isAllowedAttribute($classOrObject, $attribute, $format, $context)) {
@@ -217,7 +217,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
     protected function getAttributeValue(
         object $object,
         string $attribute,
-        string $format = null,
+        ?string $format = null,
         array $context = []
     ): mixed {
         $formMode = $context[self::NORMALIZE_TO_IDENTIFIERS] ?? false;

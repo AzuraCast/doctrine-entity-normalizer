@@ -4,5 +4,6 @@ parameters:
     paths:
         - src
 
-    checkGenericClassInNonGenericObjectType: false
-    checkMissingIterableValueType: false
+    ignoreErrors:
+        -
+            identifier: missingType.iterableValue
