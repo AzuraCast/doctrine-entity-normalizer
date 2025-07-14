@@ -204,6 +204,10 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
      */
     private function hasGetter(ReflectionClass $reflectionClass, string $attribute): bool
     {
+        if ($reflectionClass->hasProperty($attribute) && $reflectionClass->getProperty($attribute)->isPublic()) {
+            return true;
+        }
+
         // Default to "getStatus", "getConfig", etc...
         $getterMethod = $this->getMethodName($attribute, 'get');
         if ($reflectionClass->hasMethod($getterMethod)) {
@@ -276,6 +280,14 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
 
     private function getProperty(object $entity, string $key): mixed
     {
+        // Public item hook.
+        if (property_exists($entity, $key)) {
+            $reflProp = new ReflectionProperty($entity, $key);
+            if ($reflProp->isPublic()) {
+                return $reflProp->getValue($entity);
+            }
+        }
+
         // Default to "getStatus", "getConfig", etc...
         $getterMethod = $this->getMethodName($key, 'get');
         if (method_exists($entity, $getterMethod)) {
@@ -380,12 +392,19 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
         string $attribute,
         mixed $value
     ): void {
-        $methodName = $this->getMethodName($attribute, 'set');
-        if (!method_exists($entity, $methodName)) {
-            return;
+        // Public item hook.
+        if (property_exists($entity, $attribute)) {
+            $reflProp = new ReflectionProperty($entity, $attribute);
+            if ($reflProp->isPublic()) {
+                $reflProp->setValue($entity, $value);
+                return;
+            }
         }
 
-        $entity->$methodName($value);
+        $methodName = $this->getMethodName($attribute, 'set');
+        if (method_exists($entity, $methodName)) {
+            $entity->$methodName($value);
+        }
     }
 
     private function isEntity(mixed $class): bool
