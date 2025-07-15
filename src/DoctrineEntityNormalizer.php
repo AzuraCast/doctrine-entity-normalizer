@@ -395,7 +395,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
         // Public item hook.
         if (property_exists($entity, $attribute)) {
             $reflProp = new ReflectionProperty($entity, $attribute);
-            if ($reflProp->isPublic()) {
+            if ($reflProp->isPublic() && !$reflProp->isProtectedSet() && !$reflProp->isPrivateSet()) {
                 $reflProp->setValue($entity, $value);
                 return;
             }
