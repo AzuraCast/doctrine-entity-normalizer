@@ -311,13 +311,6 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
         return $this->inflector->camelize(($prefix ? $prefix . '_' : '') . $var);
     }
 
-    /**
-     * @param object $object
-     * @param string $attribute
-     * @param mixed $value
-     * @param string|null $format
-     * @param array $context
-     */
     protected function setAttributeValue(
         object $object,
         string $attribute,
@@ -359,31 +352,56 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
                 }
             }
         } else {
-            $methodName = $this->getMethodName($attribute, 'set');
+            $this->setStandardValue($object, $attribute, $value);
+        }
+    }
 
-            $reflClass = new ReflectionClass($object);
-            if (!$reflClass->hasMethod($methodName)) {
-                return;
+    private function setStandardValue(
+        object $object,
+        string $attribute,
+        mixed $value,
+        ?string $format = null,
+        array $context = []
+    ): void {
+        $reflClass = new ReflectionClass($object);
+
+        if ($reflClass->hasProperty($attribute)) {
+            $reflProp = $reflClass->getProperty($attribute);
+
+            if ($reflProp->isPublic() && !$reflProp->isProtectedSet() && !$reflProp->isPrivateSet()) {
+                $propType = $reflProp->getSettableType();
+                if (null === $value) {
+                    if ($propType->allowsNull()) {
+                        $reflProp->setValue($object, null);
+                    }
+                } else {
+                    $reflProp->setValue($object, $value);
+                }
             }
+        }
 
+        $methodName = $this->getMethodName($attribute, 'set');
+        if ($reflClass->hasMethod($methodName)) {
             // If setter parameter is a special class, normalize to it.
             $methodParams = $reflClass->getMethod($methodName)->getParameters();
             $parameter = $methodParams[0];
 
-            if (null === $value && $parameter->allowsNull()) {
-                $value = null;
+            if (null === $value) {
+                if ($parameter->allowsNull()) {
+                    $object->$methodName(null);
+                }
             } else {
-                $value = $this->denormalizeParameter(
-                    $reflClass,
-                    $parameter,
-                    $attribute,
-                    $value,
-                    $this->createChildContext($context, $attribute, $format),
-                    $format
+                $object->$methodName(
+                    $this->denormalizeParameter(
+                        $reflClass,
+                        $parameter,
+                        $attribute,
+                        $value,
+                        $this->createChildContext($context, $attribute, $format),
+                        $format
+                    )
                 );
             }
-
-            $this->setProperty($object, $attribute, $value);
         }
     }
 
