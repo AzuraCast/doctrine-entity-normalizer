@@ -30,6 +30,7 @@
         "doctrine/inflector": "^2",
         "doctrine/orm": "^3",
         "doctrine/persistence": "^2|^3",
+        "symfony/property-info": "^7",
         "symfony/serializer": "^7"
     },
     "require-dev": {

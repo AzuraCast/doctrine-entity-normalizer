@@ -14,6 +14,7 @@ use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionProperty;
+use Symfony\Component\PropertyInfo\PropertyTypeExtractorInterface;
 use Symfony\Component\Serializer\Mapping\AttributeMetadataInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -31,12 +32,14 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
     public function __construct(
         private readonly EntityManagerInterface $em,
         ?ClassMetadataFactoryInterface $classMetadataFactory = null,
+        ?PropertyTypeExtractorInterface $propertyTypeExtractor = null,
         array $defaultContext = []
     ) {
         $defaultContext[AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES] = true;
 
         parent::__construct(
             classMetadataFactory: $classMetadataFactory,
+            propertyTypeExtractor: $propertyTypeExtractor,
             defaultContext: $defaultContext
         );
 
@@ -373,9 +376,11 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
                 if (null === $value) {
                     if ($propType->allowsNull()) {
                         $reflProp->setValue($object, null);
+                        return;
                     }
                 } else {
                     $reflProp->setValue($object, $value);
+                    return;
                 }
             }
         }
@@ -389,6 +394,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
             if (null === $value) {
                 if ($parameter->allowsNull()) {
                     $object->$methodName(null);
+                    return;
                 }
             } else {
                 $object->$methodName(
@@ -401,6 +407,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
                         $format
                     )
                 );
+                return;
             }
         }
     }
