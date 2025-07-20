@@ -33,15 +33,22 @@ final class EntityTypeResolver implements TypeResolverInterface
         $identifier = $subject->getName();
         $nullable = $subject->allowsNull();
 
+        /*
+         * TODO: Workaround for a PHP bug where `PropertyType::getSettableType()`
+         *   returns types with the nullable question mark still included.
+         */
+        if (str_contains($identifier, '?')) {
+            $identifier = str_replace('?', '', $identifier);
+            $nullable = true;
+        }
+
         if (TypeIdentifier::ARRAY->value === $identifier) {
             $type = Type::array();
-
             return $nullable ? Type::nullable($type) : $type;
         }
 
         if (TypeIdentifier::ITERABLE->value === $identifier) {
             $type = Type::iterable();
-
             return $nullable ? Type::nullable($type) : $type;
         }
 
@@ -50,13 +57,7 @@ final class EntityTypeResolver implements TypeResolverInterface
         }
 
         if ($subject->isBuiltin()) {
-            if (str_contains($identifier, '?')) {
-                $identifier = str_replace('?', '', $identifier);
-                $nullable = true;
-            }
-
             $type = Type::builtin(TypeIdentifier::from($identifier));
-
             return $nullable ? Type::nullable($type) : $type;
         }
 
