@@ -5,13 +5,12 @@ use Symfony\Component\TypeInfo\Exception\UnsupportedException;
 use Symfony\Component\TypeInfo\Type;
 use Symfony\Component\TypeInfo\TypeContext\TypeContext;
 use Symfony\Component\TypeInfo\TypeContext\TypeContextFactory;
-use Symfony\Component\TypeInfo\TypeResolver\ReflectionTypeResolver;
 use Symfony\Component\TypeInfo\TypeResolver\TypeResolverInterface;
 
 final readonly class EntityPropertyTypeResolver implements TypeResolverInterface
 {
     public function __construct(
-        private ReflectionTypeResolver $reflectionTypeResolver,
+        private EntityTypeResolver $reflectionTypeResolver,
         private TypeContextFactory $typeContextFactory,
     ) {
     }

@@ -34,10 +34,14 @@ final class EntityTypeExtractor implements PropertyTypeExtractorInterface
         ?Inflector $inflector = null
     ) {
         $typeContextFactory = new TypeContextFactory();
+
+        $reflectionTypeResolver = new ReflectionTypeResolver();
+        $entityTypeResolver = new EntityTypeResolver();
+
         $this->typeResolver = TypeResolver::create([
-            \ReflectionType::class => $reflectionTypeResolver = new ReflectionTypeResolver(),
+            \ReflectionType::class => $entityTypeResolver,
             \ReflectionParameter::class => new ReflectionParameterTypeResolver($reflectionTypeResolver, $typeContextFactory),
-            \ReflectionProperty::class => new EntityPropertyTypeResolver($reflectionTypeResolver, $typeContextFactory),
+            \ReflectionProperty::class => new EntityPropertyTypeResolver($entityTypeResolver, $typeContextFactory),
             \ReflectionFunctionAbstract::class => new ReflectionReturnTypeResolver($reflectionTypeResolver, $typeContextFactory),
         ]);
 
