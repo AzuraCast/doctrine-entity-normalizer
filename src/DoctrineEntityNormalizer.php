@@ -65,6 +65,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
             return parent::normalize($data, $format, $context);
         } finally {
             $this->typeExtractor->setCurrentContext();
+            $this->typeExtractor->clearReflectionClassLookup();
         }
     }
 
@@ -88,6 +89,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
             return parent::denormalize($data, $type, $format, $context);
         } finally {
             $this->typeExtractor->setCurrentContext();
+            $this->typeExtractor->clearReflectionClassLookup();
         }
     }
 

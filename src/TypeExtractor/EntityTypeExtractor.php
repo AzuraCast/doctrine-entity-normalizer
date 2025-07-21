@@ -210,4 +210,9 @@ final class EntityTypeExtractor implements PropertyTypeExtractorInterface
 
         return $this->reflClassLookup[$class];
     }
+
+    public function clearReflectionClassLookup(): void
+    {
+        $this->reflClassLookup = [];
+    }
 }
