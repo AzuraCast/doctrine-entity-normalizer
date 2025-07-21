@@ -49,20 +49,20 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
      * @return array|string|int|float|bool|ArrayObject<int, mixed>|null
      */
     public function normalize(
-        mixed $object,
+        mixed $data,
         ?string $format = null,
         array $context = []
     ): array|string|int|float|bool|ArrayObject|null {
-        if (!is_object($object)) {
+        if (!is_object($data)) {
             throw new InvalidArgumentException('Cannot normalize non-object.');
         }
 
-        $context = $this->addDoctrineContext($object::class, $context);
+        $context = $this->addDoctrineContext($data::class, $context);
 
         $this->typeExtractor->setCurrentContext($context);
 
         try {
-            return parent::normalize($object, $format, $context);
+            return parent::normalize($data, $format, $context);
         } finally {
             $this->typeExtractor->setCurrentContext();
         }
@@ -162,7 +162,8 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
 
     protected function extractAttributes(object $object, ?string $format = null, array $context = []): array
     {
-        $rawProps = new ReflectionClass($object)->getProperties(
+        $reflClass = $this->typeExtractor->getReflectionClass($object);
+        $rawProps = $reflClass->getProperties(
             ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED
         );
 
@@ -195,34 +196,30 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
             return false;
         }
 
-        $class = \is_object($classOrObject) ? $classOrObject::class : $classOrObject;
+        $reflClass = $this->typeExtractor->getReflectionClass($classOrObject);
 
         if (isset($context[self::CLASS_METADATA]->associationMappings[$attribute])) {
-            if (!$this->supportsDeepNormalization($class, $attribute)) {
+            if (!$this->supportsDeepNormalization($reflClass, $attribute)) {
                 return false;
             }
         }
 
-        return $this->hasGetter($class, $attribute);
+        return $this->hasGetter($reflClass, $attribute);
     }
 
     /**
-     * @param class-string $className
+     * @template T as object
+     * @param ReflectionClass<T> $reflClass
      * @param string $attribute
      * @return bool Whether a getter exists that can return for this property.
      */
-    private function hasGetter(string $className, string $attribute): bool
+    private function hasGetter(ReflectionClass $reflClass, string $attribute): bool
     {
-        if (null !== $this->typeExtractor->getAccessorMethod($className, $attribute)) {
+        if (null !== $this->typeExtractor->getAccessorMethod($reflClass, $attribute)) {
             return true;
         }
 
-        try {
-            $reflProp = new ReflectionProperty($className, $attribute);
-            return $reflProp->isPublic();
-        } catch (ReflectionException) {}
-
-        return false;
+        return $reflClass->hasProperty($attribute) && $reflClass->getProperty($attribute)->isPublic();
     }
 
     protected function getAttributeValue(
@@ -233,8 +230,10 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
     ): mixed {
         $formMode = $context[self::NORMALIZE_TO_IDENTIFIERS] ?? false;
 
+        $reflClass = $this->typeExtractor->getReflectionClass($object);
+
         if (isset($context[self::CLASS_METADATA]->associationMappings[$attribute])) {
-            if (!$this->supportsDeepNormalization($object::class, $attribute)) {
+            if (!$this->supportsDeepNormalization($reflClass, $attribute)) {
                 throw new NoGetterAvailableException(
                     sprintf(
                         'Deep normalization disabled for property %s.',
@@ -244,16 +243,16 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
             }
         }
 
-        $value = $this->getProperty($object, $attribute);
+        $value = $this->getProperty($reflClass, $object, $attribute);
 
         // Special handling for Doctrine "many-to-x" relationships (Collections)
         if ($value instanceof Collection) {
             if ($formMode) {
                 $value = array_filter(array_map(
-                    function(object $valObj) {
+                    function(object $valObj) use ($reflClass) {
                         $idField = $this->em->getClassMetadata($valObj::class)->identifier;
                         return $idField && count($idField) === 1
-                            ? $this->getProperty($valObj, $idField[0])
+                            ? $this->getProperty($reflClass, $valObj, $idField[0])
                             : null;
                     },
                     $value->getValues(),
@@ -267,14 +266,19 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
     }
 
     /**
-     * @param class-string $className
+     * @template T as object
+     * @param ReflectionClass<T> $reflClass
      * @param string $attribute
      * @return bool
      */
-    private function supportsDeepNormalization(string $className, string $attribute): bool
+    private function supportsDeepNormalization(ReflectionClass $reflClass, string $attribute): bool
     {
+        if (!$reflClass->hasProperty($attribute)) {
+            return false;
+        }
+
         try {
-            $reflProp = new ReflectionProperty($className, $attribute);
+            $reflProp = $reflClass->getProperty($attribute);
             $deepNormalizeAttrs = $reflProp->getAttributes(DeepNormalize::class);
 
             if (empty($deepNormalizeAttrs)) {
@@ -289,19 +293,29 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
         }
     }
 
-    private function getProperty(object $entity, string $key): mixed
-    {
-        if (null !== $accessor = $this->typeExtractor->getAccessorMethod($entity::class, $key)) {
+    /**
+     * @template T as object
+     * @param ReflectionClass<T> $reflClass
+     * @param object $entity
+     * @param string $key
+     * @return mixed
+     */
+    private function getProperty(
+        ReflectionClass $reflClass,
+        object $entity,
+        string $key
+    ): mixed {
+        if (null !== $accessor = $this->typeExtractor->getAccessorMethod($reflClass, $key)) {
             [$method, $prefix] = $accessor;
             return $method->invoke($entity);
         }
 
-        try {
-            $reflProp = new ReflectionProperty($entity::class, $key);
+        if ($reflClass->hasProperty($key)) {
+            $reflProp = $reflClass->getProperty($key);
             if ($reflProp->isPublic()) {
                 return $reflProp->getValue($entity);
             }
-        } catch (ReflectionException) {}
+        }
 
         throw new NoGetterAvailableException(sprintf('No getter is available for property %s.', $key));
     }
@@ -313,6 +327,8 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
         ?string $format = null,
         array $context = []
     ): void {
+        $reflClass = $this->typeExtractor->getReflectionClass($object);
+
         // Special handling for Doctrine entity relationship fields.
         if (isset($context[self::ASSOCIATION_MAPPINGS][$attribute])) {
             $mapping = $context[self::ASSOCIATION_MAPPINGS][$attribute];
@@ -324,16 +340,16 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
                 $entity = $mapping['entity'];
 
                 if (empty($value)) {
-                    $this->setProperty($object, $attribute, null);
+                    $this->setProperty($reflClass, $object, $attribute, null);
                 } else if ($value instanceof $entity) {
-                    $this->setProperty($object, $attribute, $value);
+                    $this->setProperty($reflClass, $object, $attribute, $value);
                 } else if (($fieldItem = $this->em->find($entity, $value)) instanceof $entity) {
-                    $this->setProperty($object, $attribute, $fieldItem);
+                    $this->setProperty($reflClass, $object, $attribute, $fieldItem);
                 }
             } elseif ($mapping['is_owning_side']) {
                 // Convert an array of entities or identifiers to a Doctrine collection for "many-to-x" relationships.
 
-                $collection = $this->getProperty($object, $attribute);
+                $collection = $this->getProperty($reflClass, $object, $attribute);
 
                 if ($collection instanceof Collection) {
                     $collection->clear();
@@ -352,30 +368,37 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
                 }
             }
         } else {
-            $this->setProperty($object, $attribute, $value);
+            $this->setProperty($reflClass, $object, $attribute, $value);
         }
     }
 
+    /**
+     * @template T as object
+     * @param ReflectionClass<T> $reflClass
+     * @param T $entity
+     * @param string $key
+     * @param mixed $value
+     */
     private function setProperty(
+        ReflectionClass $reflClass,
         object $entity,
         string $key,
         mixed $value
     ): void {
         // Prefer setter if it exists.
-        if (null !== $mutator = $this->typeExtractor->getMutatorMethod($entity::class, $key)) {
+        if (null !== $mutator = $this->typeExtractor->getMutatorMethod($reflClass, $key)) {
             [$method, $prefix] = $mutator;
             $method->invoke($entity, $value);
             return;
         }
 
         // Try directly setting on the property.
-        try {
-            $reflProp = new ReflectionProperty($entity::class, $key);
+        if ($reflClass->hasProperty($key)) {
+            $reflProp = $reflClass->getProperty($key);
             if ($reflProp->isPublic() && !$reflProp->isProtectedSet() && !$reflProp->isPrivateSet()) {
                 $reflProp->setValue($entity, $value);
-                return;
             }
-        } catch (ReflectionException) {}
+        }
     }
 
     private function isEntity(mixed $class): bool
