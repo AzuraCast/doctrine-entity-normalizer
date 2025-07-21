@@ -30,6 +30,8 @@ final class EntityTypeExtractor implements PropertyTypeExtractorInterface
         'double' => TypeIdentifier::FLOAT->value,
     ];
 
+    private ?array $currentContext = null;
+
     public function __construct(
         ?Inflector $inflector = null
     ) {
@@ -48,6 +50,11 @@ final class EntityTypeExtractor implements PropertyTypeExtractorInterface
         $this->inflector = $inflector ?? InflectorFactory::create()->build();
     }
 
+    public function setCurrentContext(?array $value = null): void
+    {
+        $this->currentContext = $value;
+    }
+
     /**
      * @deprecated since Symfony 7.3, use "getType" instead
      */
@@ -59,7 +66,7 @@ final class EntityTypeExtractor implements PropertyTypeExtractorInterface
     public function getType(string $class, string $property, array $context = []): ?Type
     {
         // If the element is a Doctrine mapping, let the normalizer handle it.
-        if (isset($context[DoctrineEntityNormalizer::ASSOCIATION_MAPPINGS][$property])) {
+        if (isset($this->currentContext[DoctrineEntityNormalizer::ASSOCIATION_MAPPINGS][$property])) {
             return null;
         }
 

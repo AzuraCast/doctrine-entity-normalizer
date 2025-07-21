@@ -59,7 +59,13 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
 
         $context = $this->addDoctrineContext($object::class, $context);
 
-        return parent::normalize($object, $format, $context);
+        $this->typeExtractor->setCurrentContext($context);
+
+        try {
+            return parent::normalize($object, $format, $context);
+        } finally {
+            $this->typeExtractor->setCurrentContext();
+        }
     }
 
     /**
@@ -76,7 +82,13 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
     {
         $context = $this->addDoctrineContext($type, $context);
 
-        return parent::denormalize($data, $type, $format, $context);
+        $this->typeExtractor->setCurrentContext($context);
+
+        try {
+            return parent::denormalize($data, $type, $format, $context);
+        } finally {
+            $this->typeExtractor->setCurrentContext();
+        }
     }
 
     /**

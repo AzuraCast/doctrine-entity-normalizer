@@ -7,6 +7,11 @@ use Symfony\Component\TypeInfo\TypeContext\TypeContext;
 use Symfony\Component\TypeInfo\TypeContext\TypeContextFactory;
 use Symfony\Component\TypeInfo\TypeResolver\TypeResolverInterface;
 
+/**
+ * Resolves type for a given PropertyType reflection.
+ *
+ * TODO: This class is only overwritten to use getSettableType() instead of getType().
+ */
 final readonly class EntityPropertyTypeResolver implements TypeResolverInterface
 {
     public function __construct(
