@@ -8,7 +8,6 @@ use Azura\Normalizer\Exception\NoGetterAvailableException;
 use Azura\Normalizer\TypeExtractor\EntityTypeExtractor;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Proxy\DefaultProxyClassNameResolver;
 use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionException;
@@ -20,10 +19,10 @@ use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 
 final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
 {
-    public const CLASS_METADATA = 'class_metadata';
-    public const ASSOCIATION_MAPPINGS = 'association_mappings';
+    public const string CLASS_METADATA = 'class_metadata';
+    public const string ASSOCIATION_MAPPINGS = 'association_mappings';
 
-    public const NORMALIZE_TO_IDENTIFIERS = 'form_mode';
+    public const string NORMALIZE_TO_IDENTIFIERS = 'form_mode';
 
     private EntityTypeExtractor $typeExtractor;
 
@@ -150,7 +149,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
      * @return string[]|AttributeMetadataInterface[]|bool
      */
     protected function getAllowedAttributes(
-        $classOrObject,
+        string|object $classOrObject,
         array $context,
         bool $attributesAsString = false
     ): array|bool {
@@ -186,7 +185,6 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
      * @param string|null $format
      * @param array $context
      * @return bool
-     * @throws ReflectionException
      */
     protected function isAllowedAttribute(
         object|string $classOrObject,
@@ -290,7 +288,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
             /** @var DeepNormalize $deepNormalize */
             $deepNormalize = current($deepNormalizeAttrs)->newInstance();
             return $deepNormalize->getDeepNormalize();
-        } catch (\ReflectionException) {
+        } catch (ReflectionException) {
             return false;
         }
     }
@@ -308,7 +306,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
         string $key
     ): mixed {
         if (null !== $accessor = $this->typeExtractor->getAccessorMethod($reflClass, $key)) {
-            [$method, $prefix] = $accessor;
+            [$method,] = $accessor;
             return $method->invoke($entity);
         }
 
@@ -389,7 +387,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
     ): void {
         // Prefer setter if it exists.
         if (null !== $mutator = $this->typeExtractor->getMutatorMethod($reflClass, $key)) {
-            [$method, $prefix] = $mutator;
+            [$method,] = $mutator;
             $method->invoke($entity, $value);
             return;
         }
@@ -406,7 +404,7 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
     private function isEntity(mixed $class): bool
     {
         if (is_object($class)) {
-            $class = DefaultProxyClassNameResolver::getClass($class);
+            $class = $class::class;
         }
 
         if (!is_string($class) || !class_exists($class)) {
