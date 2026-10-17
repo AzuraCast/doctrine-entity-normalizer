@@ -5,6 +5,7 @@ namespace Azura\Normalizer\TypeExtractor;
 use Azura\Normalizer\DoctrineEntityNormalizer;
 use Doctrine\Inflector\Inflector;
 use Doctrine\Inflector\InflectorFactory;
+use PropertyHookType;
 use ReflectionClass;
 use ReflectionMethod;
 use Symfony\Component\PropertyInfo\PropertyTypeExtractorInterface;
@@ -13,6 +14,7 @@ use Symfony\Component\TypeInfo\Type;
 use Symfony\Component\TypeInfo\TypeContext\TypeContextFactory;
 use Symfony\Component\TypeInfo\TypeIdentifier;
 use Symfony\Component\TypeInfo\TypeResolver\ReflectionParameterTypeResolver;
+use Symfony\Component\TypeInfo\TypeResolver\ReflectionPropertyTypeResolver;
 use Symfony\Component\TypeInfo\TypeResolver\ReflectionReturnTypeResolver;
 use Symfony\Component\TypeInfo\TypeResolver\ReflectionTypeResolver;
 use Symfony\Component\TypeInfo\TypeResolver\TypeResolver;
@@ -40,12 +42,11 @@ final class EntityTypeExtractor implements PropertyTypeExtractorInterface
         $typeContextFactory = new TypeContextFactory();
 
         $reflectionTypeResolver = new ReflectionTypeResolver();
-        $entityTypeResolver = new EntityTypeResolver();
 
         $this->typeResolver = TypeResolver::create([
-            \ReflectionType::class => $entityTypeResolver,
+            \ReflectionType::class => $reflectionTypeResolver,
             \ReflectionParameter::class => new ReflectionParameterTypeResolver($reflectionTypeResolver, $typeContextFactory),
-            \ReflectionProperty::class => new EntityPropertyTypeResolver($entityTypeResolver, $typeContextFactory),
+            \ReflectionProperty::class => new ReflectionPropertyTypeResolver($reflectionTypeResolver, $typeContextFactory),
             \ReflectionFunctionAbstract::class => new ReflectionReturnTypeResolver($reflectionTypeResolver, $typeContextFactory),
         ]);
 
@@ -60,7 +61,7 @@ final class EntityTypeExtractor implements PropertyTypeExtractorInterface
     /**
      * @deprecated since Symfony 7.3, use "getType" instead
      */
-    public function getTypes(string $class, string $property, array $context = []): ?array
+    public function getTypes(string $class, string $property, array $context = []): null
     {
         return null;
     }
@@ -105,6 +106,16 @@ final class EntityTypeExtractor implements PropertyTypeExtractorInterface
         }
 
         $reflProp = $reflClass->getProperty($property);
+
+        if (
+            $reflProp->hasHook(PropertyHookType::Set)
+            && $setHookParams = $reflProp->getHook(PropertyHookType::Set)->getParameters()
+        ) {
+            try {
+                return $this->typeResolver->resolve($setHookParams[0]);
+            } catch (UnsupportedException) {
+            }
+        }
 
         try {
             return $this->typeResolver->resolve($reflProp);
