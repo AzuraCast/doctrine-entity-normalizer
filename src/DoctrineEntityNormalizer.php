@@ -9,6 +9,7 @@ use Azura\Normalizer\TypeExtractor\EntityTypeExtractor;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
+use PropertyHookType;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionProperty;
@@ -204,7 +205,25 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
             }
         }
 
+        // Skip properties that can't be written to when denormalizing
+        if (
+            ($context['_read_attributes'] ?? true) === false
+            && $this->typeExtractor->getMutatorMethod($reflClass, $attribute) === null
+            && $reflClass->hasProperty($attribute)
+            && $this->isGetOnlyVirtualProperty($reflClass->getProperty($attribute))
+        ) {
+            return false;
+        }
+
         return $this->hasGetter($reflClass, $attribute);
+    }
+
+    /**
+     * @param ReflectionProperty $reflProp
+     */
+    private function isGetOnlyVirtualProperty(ReflectionProperty $reflProp): bool
+    {
+        return $reflProp->isVirtual() && !$reflProp->hasHook(PropertyHookType::Set);
     }
 
     /**
@@ -395,7 +414,10 @@ final class DoctrineEntityNormalizer extends AbstractObjectNormalizer
         // Try directly setting on the property.
         if ($reflClass->hasProperty($key)) {
             $reflProp = $reflClass->getProperty($key);
-            if ($reflProp->isPublic() && !$reflProp->isProtectedSet() && !$reflProp->isPrivateSet()) {
+            if (
+                $reflProp->isPublic() && !$reflProp->isProtectedSet() && !$reflProp->isPrivateSet()
+                && !$this->isGetOnlyVirtualProperty($reflProp)
+            ) {
                 $reflProp->setValue($entity, $value);
             }
         }
